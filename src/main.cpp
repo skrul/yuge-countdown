@@ -4,6 +4,8 @@
 #include "freeram.h"
 #include "main.h"
 
+// #define TEST_DAYS_LEFT
+
 class HorizStripesPen : public Pen {
   public:
     HorizStripesPen(CRGB *colors, int size) : m_colors(colors), m_size(size) {}
@@ -236,18 +238,66 @@ CRGB leds1[49];
 CLEDController *controllers[2];
 RTC_DS3231 rtc;
 
-DateTime inauguration(DateTime(2021, 1, 20, 8, 0, 0));
+DateTime inauguration(DateTime(2021, 1, 20, 0, 0, 0));
 Pen* current;
 Pen* next;
 
-uint8_t getDaysLeft() {
-  //DateTime now(DateTime(2020, 11, 20, 8, 04, 00));
-  DateTime now = rtc.now();
+
+uint8_t _getDaysLeft(DateTime now) {
   TimeSpan span = inauguration - now;
-  return span.days() + (span.hours() > 0 || span.seconds() > 0 ? 1 : 0);
+  int8_t left = span.days() + (span.hours() > 0 || span.seconds() > 0 ? 1 : 0);
+  return left > 0 ? left : 0;
 }
 
-Pen* getNextPen(uint8_t daysLeft, Pen* current) {
+uint8_t getDaysLeft() {
+  return _getDaysLeft(rtc.now());
+}
+
+#ifdef TEST_DAYS_LEFT
+void testDaysLeft() {
+  DateTime now = rtc.now();
+  Serial.print("Current time is ");
+  Serial.println(now.timestamp());
+
+  Serial.print("Days left ");
+  Serial.println(_getDaysLeft(now));
+
+  DateTime hourBeforeInauguration(DateTime(2021, 1, 19, 23, 0, 0));
+  Serial.print("hourBeforeInauguration ");
+  Serial.println(_getDaysLeft(hourBeforeInauguration));
+
+  Serial.print("inauguration ");
+  Serial.println(_getDaysLeft(inauguration));
+
+  DateTime hourAfterInauguration(DateTime(2021, 1, 20, 1, 0, 0));
+  Serial.print("hourAfterInauguration ");
+  Serial.println(_getDaysLeft(hourAfterInauguration));
+
+  DateTime dayAfterInauguration(DateTime(2021, 1, 21, 1, 0, 0));
+  Serial.print("dayAfterInauguration ");
+  Serial.println(_getDaysLeft(dayAfterInauguration));
+
+  DateTime hourBeforeNewYear(DateTime(2020, 12, 31, 23, 0, 0));
+  Serial.print("hourBeforeNewYear ");
+  Serial.println(_getDaysLeft(hourBeforeNewYear));
+
+  DateTime onNewYear(DateTime(2021, 1, 1, 0, 0, 0));
+  Serial.print("onNewYear ");
+  Serial.println(_getDaysLeft(onNewYear));
+
+  DateTime hourAfterNewYear(DateTime(2021, 1, 1, 1, 0, 0));
+  Serial.print("hourAfterNewYear ");
+  Serial.println(_getDaysLeft(hourAfterNewYear));
+
+  Serial.flush(); 
+}
+#endif 
+
+void setDate() {
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+}
+
+Pen* getNextPen(int8_t daysLeft, Pen* current) {
   if (daysLeft == 0) {
     if (current == &victorySparklePen0) {
       return &victorySparklePen1;
@@ -256,26 +306,26 @@ Pen* getNextPen(uint8_t daysLeft, Pen* current) {
     }
   }
 
-  //DateTime now(DateTime(2020, 12, 28, 8, 0, 0));
-  //DateTime now(DateTime(2020, 12, 12, 8, 0, 0));
-  //DateTime now(DateTime(2020, 12, 22, 8, 0, 0));
+  //DateTime now(DateTime(2020, 12, 28, 0, 0, 0));
+  //DateTime now(DateTime(2020, 12, 12, 0, 0, 0));
+  //DateTime now(DateTime(2020, 12, 22, 0, 0, 0));
   DateTime now = rtc.now();
 
   Pen* holiday = NULL;
-  DateTime chirstmasStart(DateTime(2020, 12, 18, 8, 0, 0));
-  DateTime chirstmasEnd(DateTime(2020, 12, 26, 8, 0, 0));
+  DateTime chirstmasStart(DateTime(2020, 12, 18, 0, 0, 0));
+  DateTime chirstmasEnd(DateTime(2020, 12, 26, 0, 0, 0));
   if (now >= chirstmasStart && now <= chirstmasEnd) {
     holiday = &xmasSparklePen;
   }
 
-  DateTime hanukkahStart(DateTime(2020, 12, 10, 8, 0, 0));
-  DateTime hanukkahEnd(DateTime(2020, 12, 18, 8, 0, 0));
+  DateTime hanukkahStart(DateTime(2020, 12, 10, 0, 0, 0));
+  DateTime hanukkahEnd(DateTime(2020, 12, 18, 0, 0, 0));
   if (now >= hanukkahStart && now <= hanukkahEnd) {
     holiday = &hanukkahSparklePen;
   }
 
-  DateTime kwanzaaStart(DateTime(2020, 12, 26, 8, 0, 0));
-  DateTime kwanzaaEnd(DateTime(2021, 1, 1, 8, 0, 0));
+  DateTime kwanzaaStart(DateTime(2020, 12, 26, 0, 0, 0));
+  DateTime kwanzaaEnd(DateTime(2021, 1, 1, 0, 0, 0));
   if (now >= kwanzaaStart && now <= kwanzaaEnd) {
     holiday = &kwanzaaSparklePen;
   }
@@ -305,6 +355,8 @@ void setup() {
     abort();
   }
 
+  //setDate();
+
   Serial.println(F("Starting countdown..."));
   Serial.flush();
   getFreeRam();
@@ -318,25 +370,28 @@ void setup() {
 }
 
 void draw(uint8_t daysLeft, uint8_t frame, Pen* pen) {
-  uint8_t pos_0 = 0;
-  uint8_t pos_1 = 0;
-  if (daysLeft > 0) {
-    pos_0 = daysLeft / 10;
-    pos_1 = daysLeft % 10;
-  }
+  uint8_t pos_0 = daysLeft / 10;
+  uint8_t pos_1 = daysLeft % 10;
   drawDigit(pos_0, 0, frame, pen, leds0);
   drawDigit(pos_1, 1, frame, pen, leds1);
   FastLED.show();
 }
 
 void loop() {
-  // getFreeRam();
-  // Serial.flush();
+  getFreeRam();
+  Serial.flush();
 
   DateTime now = rtc.now();
+
+#ifdef TEST_DAYS_LEFT
+  testDaysLeft();
+  delay(1000000);
+  return;
+#endif
+
   uint32_t ts = now.unixtime();
 
-  uint8_t daysLeft = getDaysLeft();
+  int8_t daysLeft = getDaysLeft();
 
   int32_t frame = 0;
   while (rtc.now().unixtime() - ts < 120) {
