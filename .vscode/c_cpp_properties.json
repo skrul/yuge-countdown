@@ -1,0 +1,66 @@
+{
+    "configurations": [
+        {
+            "name": "!!! WARNING !!! AUTO-GENERATED FILE, PLEASE DO NOT MODIFY IT AND USE https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags"
+        },
+        {
+            "name": "Mac",
+            "macFrameworkPath": [],
+            "includePath": [
+                "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/include",
+                "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/src",
+                "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/.pio/libdeps/uno/RTClib",
+                "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/.pio/libdeps/uno/FastLED@3.3.2",
+                "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/cores/arduino",
+                "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/variants/standard",
+                "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/.pio/libdeps/uno/FastLED",
+                "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/.pio/libdeps/uno/TinyWireM",
+                "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                "/Users/steve_krulewitz/.platformio/packages/tool-unity",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/include",
+                    "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/src",
+                    "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/.pio/libdeps/uno/RTClib",
+                    "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/.pio/libdeps/uno/FastLED@3.3.2",
+                    "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                    "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                    "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/cores/arduino",
+                    "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/variants/standard",
+                    "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/.pio/libdeps/uno/FastLED",
+                    "/Users/steve_krulewitz/Documents/PlatformIO/Projects/yuge-countdown/.pio/libdeps/uno/TinyWireM",
+                    "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                    "/Users/steve_krulewitz/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                    "/Users/steve_krulewitz/.platformio/packages/tool-unity",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=50003",
+                "ARDUINO_AVR_UNO",
+                "F_CPU=16000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10808",
+                "__AVR_ATmega328P__",
+                ""
+            ],
+            "intelliSenseMode": "gcc-x64",
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "compilerPath": "/Users/steve_krulewitz/.platformio/packages/toolchain-atmelavr@1.50400.190710/bin/avr-gcc",
+            "compilerArgs": [
+                "-mmcu=atmega328p",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}

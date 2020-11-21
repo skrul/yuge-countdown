@@ -78,8 +78,10 @@ class FaderPen : public Pen {
   public:
     FaderPen() {}
     CRGB get(const PEN_CTX ctx) {
-      CRGB from = m_fromPen->get(ctx);
-      CRGB to = m_toPen->get(ctx);
+      // Don't animate during fade
+      PEN_CTX tmp = {ctx.p, ctx.segment, ctx.pos, -1, ctx.ledIdx };
+      CRGB from = m_fromPen->get(tmp);
+      CRGB to = m_toPen->get(tmp);
       return blend(from, to, ctx.frame % 256);
     }
     void setFromPen(Pen* fromPen) {
@@ -96,25 +98,58 @@ class FaderPen : public Pen {
 struct SPARKLE {
   POINT p;
   fract8 amount;
+  Direction direction;
 };
 
 class SparklePen : public Pen {
   public:
-    SparklePen(Pen* pen) : m_pen(pen){}
+    SparklePen(Pen* pen, CRGB color, SPARKLE* sparkles) : m_pen(pen), m_color(color), m_sparkles(sparkles), nextSparkle(0) {}
     CRGB get(const PEN_CTX ctx) {
-      if (ctx.frame == 0) {
-        for (uint8_t i = 0; i < 10; i++) {
-          SPARKLE s = sparkles[i];
-          s.p.x = random(MATRIX_WIDTH * 2);
-          s.p.y = random(MATRIX_HEIGHT);
-          s.amount = random(256);
+      bool shouldAnimate = ctx.frame > 0;
+      if (shouldAnimate) {
+        if (ctx.frame == 0 && ctx.pos == 0 && ctx.ledIdx == 0) {
+          nextSparkle = 0;
+        }
+
+        if (nextSparkle < 10) {
+          if (random(50) == 0) {
+            SPARKLE *s = &m_sparkles[nextSparkle];
+            s->p = { ctx.p.x, ctx.p.y };
+            s->amount = random(16) * 16;
+            s->amount = 0;
+            s->direction = Direction(random(2));
+            nextSparkle++;
+          }
+        }
+      }
+
+      for (uint8_t i = 0; i < nextSparkle; i++) {
+        SPARKLE *s = &m_sparkles[i];
+        if (s->p.x == ctx.p.x && s->p.y == ctx.p.y) {
+          CRGB c = blend(m_pen->get(ctx), m_color, s->amount);
+          if (shouldAnimate) {
+            if (s->direction == POS) {
+              s->amount += s->amount == 240 ? 15 : 16;
+              if (s->amount >= 255) {
+                s->direction = NEG;
+              }
+            } else {
+              s->amount -= s->amount == 255 ? 15 : 16;
+              if (s->amount == 0) {
+                s->direction = POS;
+              }
+            }
+          }
+          return c;
         }
       }
       return m_pen->get(ctx);
     }
   private:
     Pen *m_pen;
-    SPARKLE sparkles[10];
+    uint8_t nextSparkle;
+    CRGB m_color;
+    SPARKLE* m_sparkles;
 };
 
 void drawDigit(uint8_t num, uint8_t pos, uint8_t frame, Pen *pen, CRGB *leds) {
@@ -129,7 +164,7 @@ void drawDigit(uint8_t num, uint8_t pos, uint8_t frame, Pen *pen, CRGB *leds) {
       if (segs[i] == 1) {
         POINT flipped = p;
         flipped.y = MATRIX_HEIGHT - p.y - 1;
-        PEN_CTX ctx = {flipped, i, pos, frame};
+        PEN_CTX ctx = {flipped, i, pos, frame, ledIdx};
         leds[ledIdx] = pen->get(ctx);
       } else {
         leds[ledIdx] = CRGB::Black;
@@ -165,24 +200,36 @@ HorizStripesPen panAfricanPen(HorizStripesPen(c3, 3));
 CRGB c4[] = {0xFF0018, 0xFFA52C, 0xFFFF41, 0x008018, 0x0000F9, 0x86007D};
 HorizStripesPen prideFlagPen(HorizStripesPen(c4, 6));
 
-CRGB c5[] = {0x169B62, CRGB::White, 0xFF8200};
-VertStripesPen irelandPen(VertStripesPen(c3, 3));
-
-CRGB c6[] = {0xaa0000, 0xb3995d};
-SegmentCyclePen fortyNinersPen(SegmentCyclePen(c6, 2));
-
 GoldenGateBridgePen goldenGateBridgePen;
 
 FaderPen faderPen;
+
+SPARKLE sparkles0[49];
+SPARKLE sparkles1[49];
+
+SolidPen greenkPen(SolidPen(CRGB::Green));
+SparklePen xmasSparklePen(&greenkPen, CRGB::Red, sparkles0);
+
+CRGB c5[] = {CRGB::Blue, CRGB::White};
+SegmentCyclePen hanukkahPen(SegmentCyclePen(c5, 2));
+SparklePen hanukkahSparklePen(&hanukkahPen, CRGB::Yellow, sparkles0);
+
+CRGB c6[] = {CRGB::Red, CRGB::Green};
+SegmentCyclePen kwanzaaPen(SegmentCyclePen(c6, 2));
+SparklePen kwanzaaSparklePen(&kwanzaaPen, CRGB::White, sparkles0);
+
+CRGB c7[] = {CRGB::Red, CRGB::White, CRGB::Blue};
+SegmentCyclePen victoryPen(SegmentCyclePen(c7, 3));
+SparklePen victorySparklePen0(&victoryPen, CRGB::White, sparkles0);
+SparklePen victorySparklePen1(&victoryPen, CRGB::White, sparkles1);
 
 Pen* pens[] = {
   &prideFlagPen, &panAfricanPen, &patrioticPen, &democratPen, &californiaPen, &transFlagPen, &giantsPen, &pinkPen
 };
 // Pen* pens[] = {
-//   &fortyNinersPen 
+//   &prideFlagPen, &giantsSparklePen
 // };
 uint8_t numPens = sizeof(pens) / sizeof(*pens);
-
 
 CRGB leds0[49];
 CRGB leds1[49];
@@ -193,9 +240,59 @@ DateTime inauguration(DateTime(2021, 1, 20, 8, 0, 0));
 Pen* current;
 Pen* next;
 
-Pen* getNextPen() {
+uint8_t getDaysLeft() {
+  //DateTime now(DateTime(2020, 11, 20, 8, 04, 00));
+  DateTime now = rtc.now();
+  TimeSpan span = inauguration - now;
+  return span.days() + (span.hours() > 0 || span.seconds() > 0 ? 1 : 0);
+}
+
+Pen* getNextPen(uint8_t daysLeft, Pen* current) {
+  if (daysLeft == 0) {
+    if (current == &victorySparklePen0) {
+      return &victorySparklePen1;
+    } else {
+      return &victorySparklePen0;
+    }
+  }
+
+  //DateTime now(DateTime(2020, 12, 28, 8, 0, 0));
+  //DateTime now(DateTime(2020, 12, 12, 8, 0, 0));
+  //DateTime now(DateTime(2020, 12, 22, 8, 0, 0));
   DateTime now = rtc.now();
 
+  Pen* holiday = NULL;
+  DateTime chirstmasStart(DateTime(2020, 12, 18, 8, 0, 0));
+  DateTime chirstmasEnd(DateTime(2020, 12, 26, 8, 0, 0));
+  if (now >= chirstmasStart && now <= chirstmasEnd) {
+    holiday = &xmasSparklePen;
+  }
+
+  DateTime hanukkahStart(DateTime(2020, 12, 10, 8, 0, 0));
+  DateTime hanukkahEnd(DateTime(2020, 12, 18, 8, 0, 0));
+  if (now >= hanukkahStart && now <= hanukkahEnd) {
+    holiday = &hanukkahSparklePen;
+  }
+
+  DateTime kwanzaaStart(DateTime(2020, 12, 26, 8, 0, 0));
+  DateTime kwanzaaEnd(DateTime(2021, 1, 1, 8, 0, 0));
+  if (now >= kwanzaaStart && now <= kwanzaaEnd) {
+    holiday = &kwanzaaSparklePen;
+  }
+
+  uint8_t numPensWithHoliday = holiday == NULL ? numPens : numPens + 1; 
+
+  Pen *next;
+  do {
+    long r = random(numPensWithHoliday);
+    if (r == numPens) {
+      next = holiday;
+    } else {
+     next = pens[r];
+    }
+  } while (next == current);
+
+  return next;
 }
 
 void setup() {
@@ -217,44 +314,44 @@ void setup() {
   FastLED.show();
 
   randomSeed(analogRead(0));
-  current = pens[random(numPens)];
+  current = getNextPen(getDaysLeft(), NULL);
 }
 
-void loop() {
-  getFreeRam();
-  Serial.flush();
-
-  //DateTime now(DateTime(2020, 11, 20, 8, 04, 00));
-  DateTime now = rtc.now();
-  TimeSpan span = inauguration - now;
-  int8_t daysLeft = span.days() + (span.hours() > 0 || span.seconds() > 0 ? 1 : 0);
-  Serial.println(daysLeft);
-  Serial.flush();
+void draw(uint8_t daysLeft, uint8_t frame, Pen* pen) {
   uint8_t pos_0 = 0;
   uint8_t pos_1 = 0;
   if (daysLeft > 0) {
     pos_0 = daysLeft / 10;
     pos_1 = daysLeft % 10;
   }
+  drawDigit(pos_0, 0, frame, pen, leds0);
+  drawDigit(pos_1, 1, frame, pen, leds1);
+  FastLED.show();
+}
 
-  for (int j = 0; j < 50; j++) {
-    drawDigit(pos_0, 0, j, current, leds0);
-    drawDigit(pos_1, 1, j, current, leds1);
-    FastLED.show();
+void loop() {
+  // getFreeRam();
+  // Serial.flush();
+
+  DateTime now = rtc.now();
+  uint32_t ts = now.unixtime();
+
+  uint8_t daysLeft = getDaysLeft();
+
+  int32_t frame = 0;
+  while (rtc.now().unixtime() - ts < 120) {
+    draw(daysLeft, frame, current);
+    frame++;
     delay(100); 
   }
 
-  do {
-    next = pens[random(numPens)];
-  } while (next == current);
+  next = getNextPen(daysLeft, current);
 
   faderPen.setFromPen(current);
   faderPen.setToPen(next);
 
-  for (int j = 0; j < 256; j++) {
-    drawDigit(pos_0, 0, j, &faderPen, leds0);
-    drawDigit(pos_1, 1, j, &faderPen, leds1);
-    FastLED.show();
+  for (int32_t frame = 0; frame < 256; frame++) {
+    draw(daysLeft, frame, &faderPen);
     delay(10); 
   }
 

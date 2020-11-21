@@ -33,7 +33,8 @@ struct PEN_CTX {
   POINT p;
   uint8_t segment;
   uint8_t pos;
-  uint8_t frame;
+  int32_t frame;
+  uint8_t ledIdx;
 };
 
 //      3
